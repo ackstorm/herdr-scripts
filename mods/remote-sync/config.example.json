@@ -1,0 +1,12 @@
+{
+  "skip": [],
+  "paths": [
+    ".agents/AGENTS.md",
+    ".agents/references",
+    ".claude/settings.json",
+    ".claude/hooks",
+    ".config/opencode/cli.json",
+    ".config/opencode/opencode.jsonc",
+    ".config/opencode/plugins"
+  ]
+}

@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# wake: run a command at a set time in a new hc terminal, in the folder it was set from.
+# Each job is a file in ~/.config/wake (due time, folder, command), so jobs survive a
+# restart: `wake rearm` at boot starts their waits again, and runs overdue ones at once.
+set -euo pipefail
+PATH=$PATH:$HOME/.local/bin
+dir=${WAKE_DIR:-$HOME/.config/wake}
+
+usage() {
+  cat >&2 <<'EOF'
+usage: wake "<when>" "<command>"  run <command> at <when>, in a new hc terminal, in this folder
+       wake ls                    list the jobs
+       wake rm <name>             cancel one
+       wake rearm                 start the waits again (at boot)
+<when> is anything `date -d` reads: "+2 hours", "tomorrow 08:30", 'TZ="Europe/Madrid" 08:30'.
+EOF
+  exit 2
+}
+
+read_job() { { read -r due; read -r cwd; cmd=$(cat); } <"$1"; }
+armed() { pgrep -f "[w]ake-sleep $1 " >/dev/null; }
+when() { date -d "@$1" '+%F %T %Z'; }
+
+# The wait is its own session, so it outlives the shell and terminal that set it.
+# The job file goes only once hc has opened the terminal: a failed run is retried at rearm.
+arm() {
+  local f=$1 name delay
+  name=$(basename "$f")
+  armed "$name" && return 0
+  read_job "$f"
+  delay=$((due - $(date +%s)))
+  ((delay > 0)) || delay=0
+  # shellcheck disable=SC2016 # expanded by the inner sh
+  setsid -f sh -c 'sleep "$1" && hc run --bg --no-parent --name "$2" --cwd "$3" -- zsh -ic "$4" >/dev/null && rm -f "$5"' \
+    "wake-sleep $name" "$delay" "$name" "$cwd" "$cmd" "$f" </dev/null >/dev/null 2>&1
+}
+
+add() {
+  local due name n=1
+  due=$(date -d "$1" +%s) || usage
+  ((due > $(date +%s))) || { echo "wake: $(when "$due") has passed; try \"tomorrow ...\"" >&2; exit 2; }
+  name=wake-$(date -d "@$due" +%m%d-%H%M)
+  while [ -e "$dir/$name" ]; do n=$((n + 1)); name=wake-$(date -d "@$due" +%m%d-%H%M)-$n; done
+  mkdir -p "$dir"
+  printf '%s\n%s\n%s\n' "$due" "$PWD" "$2" >"$dir/$name"
+  arm "$dir/$name"
+  echo "$name: $(when "$due"), in $PWD: $2"
+}
+
+case ${1:-} in
+  ls)
+    for f in "$dir"/wake-*; do
+      [ -e "$f" ] || continue
+      read_job "$f"
+      state=armed; armed "$(basename "$f")" || state="not armed: wake rearm"
+      printf '%s  %s  (%s)\n  in %s: %s\n' "$(basename "$f")" "$(when "$due")" "$state" "$cwd" "$cmd"
+    done ;;
+  rm)
+    [ $# -eq 2 ] && [ -e "$dir/$2" ] || { echo "wake: no job ${2:-}" >&2; exit 2; }
+    pkill -f "[w]ake-sleep $2 " || true
+    rm -f "$dir/$2" ;;
+  rearm)
+    for f in "$dir"/wake-*; do [ -e "$f" ] && arm "$f"; done; true ;;
+  "" | -h | --help) usage ;;
+  *) [ $# -eq 2 ] || usage; add "$1" "$2" ;;
+esac
