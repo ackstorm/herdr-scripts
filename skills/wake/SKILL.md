@@ -6,13 +6,12 @@ argument-hint: <when> [prompt]
 
 # wake
 
-Run `"${CLAUDE_SKILL_DIR}/scripts/wake.sh"` (called `wake` below). Each job is a file in `~/.config/wake`; at the
-due time it opens an `hc` terminal in the folder it was set from. A past time is refused.
+Each job is a file in `~/.config/wake`; at the due time it opens an `hc` terminal in the folder it was set from. A past time is refused.
 
 ```sh
-wake '<when>' "<command>"   # <when>: anything `date -d` reads: "+2 hours", "tomorrow 08:30"
-wake ls                     # jobs, due time, folder, armed or not
-wake rm <name>              # cancel one
+"${CLAUDE_SKILL_DIR}/scripts/wake.sh" '<when>' "<command>"   # anything `date -d` reads: "+2 hours", "tomorrow 08:30"
+"${CLAUDE_SKILL_DIR}/scripts/wake.sh" ls               # jobs, due time, folder, armed or not
+"${CLAUDE_SKILL_DIR}/scripts/wake.sh" rm <name>        # cancel one
 ```
 
 ## Rearm after a reboot
@@ -36,10 +35,10 @@ started this session, minus any resume flag: `ps -o args= -p $(ps -o ppid= -p $P
 user's permission mode or ACH routing and stalls at the first prompt with nobody to answer.
 
 ```sh
-wake '<when>' "<launch> --resume $CLAUDE_CODE_SESSION_ID '<prompt>'"
+"${CLAUDE_SKILL_DIR}/scripts/wake.sh" '<when>' "<launch> --resume $CLAUDE_CODE_SESSION_ID '<prompt>'"
 ```
 
-- Tell the user the due time with its zone (wake prints it): workspaces run UTC unless `<when>`
+- Tell the user the due time with its zone (wake.sh prints it): workspaces run UTC unless `<when>`
   holds `TZ="Europe/Madrid"`.
 - Two copies of one session must not run. Asked to close it as well: check `ps -o args= -p $PPID`
   is this `claude`, run `setsid nohup sh -c 'sleep 45; kill -TERM <that pid>' >/dev/null 2>&1 </dev/null &`,

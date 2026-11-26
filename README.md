@@ -9,16 +9,16 @@ Jobs are files in `~/.config/wake`, so they survive a restart. It ships as a Cla
 plugin whose `wake` skill (`/wake <when> [prompt]`) runs it for you.
 
 ```sh
-wake "+2 hours" "ping -c 3 example.com"
-wake 'TZ="Europe/Madrid" tomorrow 08:30' "claude --resume $CLAUDE_CODE_SESSION_ID 'check last night backups'"
-wake ls            # jobs, due time, folder, armed or not
-wake rm <name>     # cancel one
-wake rearm         # start the waits again; overdue jobs run at once
+wake.sh "+2 hours" "ping -c 3 example.com"
+wake.sh 'TZ="Europe/Madrid" tomorrow 08:30' "claude --resume $CLAUDE_CODE_SESSION_ID 'check last night backups'"
+wake.sh ls         # jobs, due time, folder, armed or not
+wake.sh rm <name>  # cancel one
+wake.sh rearm      # start the waits again; overdue jobs run at once
 ```
 
 `<when>` is anything `date -d` reads. A time already past is refused.
 
-- **Resume an agent session.** Run `wake` from inside the session, with the command in
+- **Resume an agent session.** Run `wake.sh` from inside the session, with the command in
   double quotes so `$CLAUDE_CODE_SESSION_ID` expands when you set it. Close the session
   before it fires, or two copies write to one conversation.
 - **The command runs under `zsh -ic`**, so your aliases and `~/.zshrc` apply.

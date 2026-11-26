@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# wake: run a command at a set time in a new hc terminal, in the folder it was set from.
+# wake.sh: run a command at a set time in a new hc terminal, in the folder it was set from.
 # Each job is a file in ~/.config/wake (due time, folder, command), so jobs survive a
-# restart: `wake rearm` at boot starts their waits again, and runs overdue ones at once.
+# restart: `wake.sh rearm` at boot starts their waits again, and runs overdue ones at once.
 # Boot hooks call the copy in $dir/wake.sh: the plugin folder path changes with each version.
 set -euo pipefail
 PATH=$PATH:$HOME/.local/bin
@@ -11,10 +11,10 @@ mkdir -p "$dir"
 
 usage() {
   cat >&2 <<'EOF'
-usage: wake "<when>" "<command>"  run <command> at <when>, in a new hc terminal, in this folder
-       wake ls                    list the jobs
-       wake rm <name>             cancel one
-       wake rearm                 start the waits again (at boot)
+usage: wake.sh "<when>" "<command>"  run <command> at <when>, in a new hc terminal, in this folder
+       wake.sh ls                    list the jobs
+       wake.sh rm <name>             cancel one
+       wake.sh rearm                 start the waits again (at boot)
 <when> is anything `date -d` reads: "+2 hours", "tomorrow 08:30", 'TZ="Europe/Madrid" 08:30'.
 EOF
   exit 2
@@ -41,7 +41,7 @@ arm() {
 add() {
   local due name n=1
   due=$(date -d "$1" +%s) || usage
-  ((due > $(date +%s))) || { echo "wake: $(when "$due") has passed; try \"tomorrow ...\"" >&2; exit 2; }
+  ((due > $(date +%s))) || { echo "wake.sh: $(when "$due") has passed; try \"tomorrow ...\"" >&2; exit 2; }
   name=wake-$(date -d "@$due" +%m%d-%H%M)
   while [ -e "$dir/$name" ]; do n=$((n + 1)); name=wake-$(date -d "@$due" +%m%d-%H%M)-$n; done
   printf '%s\n%s\n%s\n' "$due" "$PWD" "$2" >"$dir/$name"
@@ -54,11 +54,11 @@ case ${1:-} in
     for f in "$dir"/wake-*; do
       [ -e "$f" ] || continue
       read_job "$f"
-      state=armed; armed "$(basename "$f")" || state="not armed: wake rearm"
+      state=armed; armed "$(basename "$f")" || state="not armed: wake.sh rearm"
       printf '%s  %s  (%s)\n  in %s: %s\n' "$(basename "$f")" "$(when "$due")" "$state" "$cwd" "$cmd"
     done ;;
   rm)
-    [ $# -eq 2 ] && [ -e "$dir/$2" ] || { echo "wake: no job ${2:-}" >&2; exit 2; }
+    [ $# -eq 2 ] && [ -e "$dir/$2" ] || { echo "wake.sh: no job ${2:-}" >&2; exit 2; }
     pkill -f "[w]ake-sleep $2 " || true
     rm -f "$dir/$2" ;;
   rearm)
