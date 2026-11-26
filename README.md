@@ -22,6 +22,8 @@ wake.sh rearm      # start the waits again; overdue jobs run at once
   double quotes so `$CLAUDE_CODE_SESSION_ID` expands when you set it. Close the session
   before it fires, or two copies write to one conversation.
 - **The command runs under `zsh -ic`**, so your aliases and `~/.zshrc` apply.
+- **It opens as a new tab in the herdr-app workspace you set it from.** Set from outside
+  herdr-app, it opens where the app does not show it: reach it with `hc attach`.
 - **A job file goes only once `hc` opens its terminal.** A failed run is retried at the
   next `rearm`.
 - **A machine that is off runs nothing.** At the next boot, `rearm` runs what came due.

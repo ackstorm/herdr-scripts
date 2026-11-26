@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # wake.sh: run a command at a set time in a new hc terminal, in the folder it was set from.
-# Each job is a file in ~/.config/wake (due time, folder, command), so jobs survive a
+# Each job is a file in ~/.config/wake (due time, folder, labels, command), so jobs survive a
 # restart: `wake.sh rearm` at boot starts their waits again, and runs overdue ones at once.
 # Boot hooks call the copy in $dir/wake.sh: the plugin folder path changes with each version.
 set -euo pipefail
@@ -20,7 +20,7 @@ EOF
   exit 2
 }
 
-read_job() { { read -r due; read -r cwd; cmd=$(cat); } <"$1"; }
+read_job() { { read -r due; read -r cwd; read -r labels; cmd=$(cat); } <"$1"; }
 armed() { pgrep -f "[w]ake-sleep $1 " >/dev/null; }
 when() { date -d "@$1" '+%F %T %Z'; }
 
@@ -34,8 +34,8 @@ arm() {
   delay=$((due - $(date +%s)))
   ((delay > 0)) || delay=0
   # shellcheck disable=SC2016 # expanded by the inner sh
-  setsid -f sh -c 'sleep "$1" && hc run --bg --no-parent --name "$2" --cwd "$3" -- zsh -ic "$4" >/dev/null && rm -f "$5"' \
-    "wake-sleep $name" "$delay" "$name" "$cwd" "$cmd" "$f" </dev/null >/dev/null 2>&1
+  setsid -f sh -c 'sleep "$1" && hc run --bg --no-parent $6 --name "$2" --cwd "$3" -- zsh -ic "$4" >/dev/null && rm -f "$5"' \
+    "wake-sleep $name" "$delay" "$name" "$cwd" "$cmd" "$f" "$labels" </dev/null >/dev/null 2>&1
 }
 
 add() {
@@ -44,7 +44,10 @@ add() {
   ((due > $(date +%s))) || { echo "wake.sh: $(when "$due") has passed; try \"tomorrow ...\"" >&2; exit 2; }
   name=wake-$(date -d "@$due" +%m%d-%H%M)
   while [ -e "$dir/$name" ]; do n=$((n + 1)); name=wake-$(date -d "@$due" +%m%d-%H%M)-$n; done
-  printf '%s\n%s\n%s\n' "$due" "$PWD" "$2" >"$dir/$name"
+  # herdr-app shows a terminal only in the workspace its labels name: take the setter's.
+  labels=$(hc get "${HC_TERMINAL_ID:-}" --json 2>/dev/null |
+    grep -oE '"(herdr\.space|ovis\.workspace)":"[^"]*"' | sed -E 's/"([^"]*)":"([^"]*)"/--label=\1=\2/' | tr '\n' ' ') || true
+  printf '%s\n%s\n%s\n%s\n' "$due" "$PWD" "$labels" "$2" >"$dir/$name"
   arm "$dir/$name"
   echo "$name: $(when "$due"), in $PWD: $2"
 }
