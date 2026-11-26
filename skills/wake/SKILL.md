@@ -15,10 +15,25 @@ wake.sh ls                     # jobs, due time, folder, armed or not
 wake.sh rm <name>              # cancel one
 ```
 
+## Codex in hc
+
+For a delayed greeting, have the current thread greet the user when it resumes.
+Put a fresh, distinctive marker in one short progress message so Wake can identify this terminal.
+Then run the bundled script once on the host from the project folder:
+
+```sh
+bash "<this skill's folder>/scripts/wake.sh" resume "+2 minutes" "Greet the user now." "<the marker you just displayed>"
+```
+
+Use the delay and prompt the user asked for. Report the due time printed by the command.
+Wake finds the client, arms one job, and closes the client at the due time before resuming the same thread.
+For relative delays in seconds, minutes, hours or days it uses the latest prompt timestamp for this thread when available.
+If the user wants to keep the client open, ask how they want the reminder delivered.
+
 ## Rearm after a reboot
 
 A reboot kills the waits; `~/.config/wake/wake.sh rearm` starts them again and runs overdue jobs
-at once. Before the first job, check `crontab -l 2>/dev/null | grep -q 'wake.sh rearm'`. When it
+at once. When setting up reboot recovery, or before the first generic, Claude Code or OpenCode job, check `crontab -l 2>/dev/null | grep -q 'wake.sh rearm'`. When it
 finds nothing, ask the user whether to add this line to their crontab, and add it only on a yes:
 
 ```
@@ -28,7 +43,10 @@ finds nothing, ask the user whether to add this line to their crontab, and add i
 On a no, or when `crontab` fails, tell them to run `~/.config/wake/wake.sh rearm` at boot their own
 way, and do not ask again in this session.
 
-## Resume this session
+## Resume in Claude Code or OpenCode
+
+When the user asks Wake to greet them later, resume this thread with a prompt to give
+the greeting here. Use another delivery channel when the user requests it.
 
 Run from the project root, with double quotes so the id expands now.
 
@@ -36,7 +54,6 @@ Run from the project root, with double quotes so the id expands now.
 |---|---|---|
 | Claude Code | `<launch> --resume $CLAUDE_CODE_SESSION_ID '<prompt>'` | `kill -TERM <pid>`, the pid of `$PPID` once `ps -o args= -p $PPID` shows `claude` |
 | opencode | `opencode -s $OPENCODE_SESSION_ID --prompt '<prompt>'` | `hc kill "$HC_TERMINAL_ID"` (set when it runs in an `hc` terminal) |
-| Codex | `codex resume $CODEX_THREAD_ID '<prompt>'` | none from inside: ask the user to quit it |
 
 ```sh
 wake.sh '<when>' "<job command>"
@@ -47,10 +64,8 @@ setsid nohup sh -c 'sleep 45; <close>' >/dev/null 2>&1 </dev/null &
   `ps -o args= -p $(ps -o ppid= -p $PPID)` (e.g. `ach-cli launch claude -- --dangerously-skip-permissions`).
   Plain `claude` wakes without the user's permission mode or ACH routing and stalls at the first
   prompt with nobody to answer.
-- Codex: its sandbox hides `hc` and makes `~/.config/wake` read-only, so run `wake.sh` outside the
-  sandbox (ask for escalated permissions).
 - Two copies of one session must not run, so close this one once the wake is set, unless the user
-  asks to keep it open: start the close line above and send the last reply inside those 45 s,
+  asks to keep it open: arm the close and send the last reply before it fires,
   saying it closes and when it comes back. Where it cannot close itself, remind the user to close
   it before the wake fires.
 - Tell the user the due time with its zone (wake.sh prints it): workspaces run UTC unless `<when>`

@@ -12,6 +12,7 @@ mkdir -p "$dir"
 usage() {
   cat >&2 <<'EOF'
 usage: wake.sh "<when>" "<command>"  run <command> at <when>, in a new hc terminal, in this folder
+       wake.sh resume "<when>" "<prompt>" "<screen marker>"  reopen this interactive thread
        wake.sh ls                    list the jobs
        wake.sh rm <name>             cancel one
        wake.sh rearm                 start the waits again (at boot)
@@ -49,10 +50,64 @@ add() {
     grep -oE '"(herdr\.space|ovis\.workspace)":"[^"]*"' | sed -E 's/"([^"]*)":"([^"]*)"/--label=\1=\2/' | tr '\n' ' ') || true
   printf '%s\n%s\n%s\n%s\n' "$due" "$PWD" "$labels" "$2" >"$dir/$name"
   arm "$dir/$name"
-  echo "$name: $(when "$due"), in $PWD: $2"
+  echo "$name: $(when "$due"), in $PWD: ${3:-$2}"
+}
+
+client_start() { awk '{print $22}' "/proc/$1/stat" 2>/dev/null; }
+
+resume_thread() {
+  local schedule=$1 prompt=$2 marker=$3 thread=${CODEX_THREAD_ID:?missing thread ID}
+  local term pid start command history requested delay
+  local -a matches=()
+  [[ -n $marker && -n $prompt ]] || usage
+  if [[ $schedule =~ ^\+[0-9]+[[:space:]]+(second|minute|hour|day)s?$ ]]; then
+    history=${CODEX_HOME:-$HOME/.codex}/history.jsonl
+    if [[ -r $history ]]; then
+      requested=$(jq -n --arg id "$thread" 'reduce (inputs | select(.session_id == $id)) as $entry (null; $entry.ts) // empty' "$history")
+      if [[ -n $requested ]]; then
+        delay=${schedule#+}
+        schedule="@$(date -d "$(date -u -d "@$requested" '+%F %T UTC') +$delay" +%s)"
+      fi
+    fi
+  fi
+  while read -r term; do
+    pid=$(hc get "$term" --json | jq -r --arg id "$thread" '
+      .foreground | select(.name == "codex") |
+      select((.argv | index("resume")) as $i | $i == null or .argv[$i+1] == $id) | .pid') || continue
+    [[ -n $pid ]] || continue
+    if hc read "$term" --lines 80 | grep -F -- "$marker" >/dev/null; then
+      matches+=("$term $pid")
+    fi
+  done < <(hc ls --json | jq -r '.terminals[].address | select(test("^t[0-9a-z]+$"))')
+  if (( ${#matches[@]} != 1 )); then
+    echo "wake.sh: expected one local client displaying '$marker', found ${#matches[@]}" >&2
+    return 1
+  fi
+  read -r term pid <<< "${matches[0]}"
+  start=$(client_start "$pid") || return 1
+  printf -v command '%q handoff %q %q %q && codex resume %q %q' "$dir/wake.sh" "$term" "$pid" "$start" "$thread" "$prompt"
+  HC_TERMINAL_ID=$term add "$schedule" "$command" "resume this thread"
+}
+
+handoff() {
+  local term=$1 pid=$2 start=$3 attempt
+  [[ $(client_start "$pid") == "$start" ]] || return 0
+  if [[ $(hc get "$term" --json | jq -r '.foreground.pid') != "$pid" ]]; then
+    echo "wake.sh: the client is still running outside the foreground of $term" >&2
+    return 1
+  fi
+  hc keys "$term" / q u i t enter >/dev/null || return 1
+  for attempt in {1..20}; do
+    [[ $(client_start "$pid") == "$start" ]] || return 0
+    sleep 0.25
+  done
+  echo "wake.sh: the client in $term did not exit" >&2
+  return 1
 }
 
 case ${1:-} in
+  resume) [ $# -eq 4 ] || usage; resume_thread "$2" "$3" "$4" ;;
+  handoff) [ $# -eq 4 ] || usage; handoff "$2" "$3" "$4" ;;
   ls)
     for f in "$dir"/wake-*; do
       [ -e "$f" ] || continue
