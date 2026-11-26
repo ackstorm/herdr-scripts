@@ -5,12 +5,14 @@ Small tools around [herdr](https://herdr.dev) and herdr-core (`hc`).
 ## wake
 
 Runs a command at a set time in a new `hc` terminal, in the folder you set it from.
+For a session wake, the skill announces the close and resume times. You have one minute
+to cancel before the client closes. Wakes less than a minute away deliver the prompt
+in the open session.
 Jobs are files in `~/.config/wake`, so they survive a restart. It ships as a Claude Code
 plugin whose `wake` skill (`/wake <when> [prompt]`) runs it for you.
 
 ```sh
 wake.sh "+2 hours" "ping -c 3 example.com"
-wake.sh 'TZ="Europe/Madrid" tomorrow 08:30' "claude --resume $CLAUDE_CODE_SESSION_ID 'check last night backups'"
 wake.sh ls         # jobs, due time, folder, armed or not
 wake.sh rm <name>  # cancel one
 wake.sh rearm      # start the waits again; overdue jobs run at once
@@ -18,17 +20,15 @@ wake.sh rearm      # start the waits again; overdue jobs run at once
 
 `<when>` is anything `date -d` reads. A time already past is refused.
 
-- **Resume an agent session.** Run `wake.sh` from inside the session, with the command in
-  double quotes so `$CLAUDE_CODE_SESSION_ID` expands when you set it. Close the session
-  before it fires, or two copies write to one conversation.
+- **Resume an agent session.** Use the [wake skill](skills/wake/SKILL.md) from the session you want to resume. Its confirmation includes the job name for `wake.sh rm <name>`.
 - **The command runs under `zsh -ic`**, so your aliases and `~/.zshrc` apply.
-- **It opens as a new tab in the herdr-app workspace you set it from.** Set from outside
+- **A new terminal opens as a tab in the herdr-app workspace you set it from.** Set from outside
   herdr-app, it opens where the app does not show it: reach it with `hc attach`.
-- **A job file goes only once `hc` opens its terminal.** A failed run is retried at the
+- **Wake removes the job after `hc` accepts the prompt or opens the terminal.** A failed run is retried at the
   next `rearm`.
 - **A machine that is off runs nothing.** At the next boot, `rearm` runs what came due.
 
-Install (Linux; needs `hc`, `setsid`, GNU `date`). The repository is the plugin, with a
+Install on Linux with `hc`, `setsid`, `flock`, and GNU `date`. Session wakes also use `jq`. The repository is the plugin, with a
 manifest per agent at its root:
 
 ```sh

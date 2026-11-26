@@ -6,7 +6,7 @@ argument-hint: <when> [prompt]
 
 # wake
 
-Each job is a file in `~/.config/wake`; at the due time it opens an `hc` terminal in the folder it was set from. A past time is refused.
+Wake stores jobs in `~/.config/wake`. Commands open in a new `hc` terminal in the folder where you scheduled them.
 `wake.sh` below is `scripts/wake.sh` in this skill's folder (`${CLAUDE_SKILL_DIR}` in Claude Code).
 
 ```sh
@@ -15,9 +15,18 @@ wake.sh ls                     # jobs, due time, folder, armed or not
 wake.sh rm <name>              # cancel one
 ```
 
+## Scheduling a session wake
+
+Run the bundled script from the project folder with the user's requested time and prompt. For a delayed greeting, the prompt can be `Greet the user now.`
+
+As soon as the job is armed, tell the user when the session will close, when it will resume (include the time zone), and how to cancel. Use the times and job name printed by the script.
+
+> Wake is set for 12:10 CET. I’ll close this session in one minute, at 12:01 CET. Say “cancel” before then to stop both (job `wake-1126-1210`).
+
+If the wake is less than one minute away when armed, tell the user the session stays open and when the prompt will arrive. If the user cancels or you spot a scheduling mistake, run `wake.sh rm <name>` immediately. The job handles closing the client.
+
 ## Codex in hc
 
-For a delayed greeting, have the current thread greet the user when it resumes.
 Put a fresh, distinctive marker in one short progress message so Wake can identify this terminal.
 Then run the bundled script once on the host from the project folder:
 
@@ -25,10 +34,7 @@ Then run the bundled script once on the host from the project folder:
 bash "<this skill's folder>/scripts/wake.sh" resume "+2 minutes" "Greet the user now." "<the marker you just displayed>"
 ```
 
-Use the delay and prompt the user asked for. Report the due time printed by the command.
-Wake finds the client, arms one job, and closes the client at the due time before resuming the same thread.
-For relative delays in seconds, minutes, hours or days it uses the latest prompt timestamp for this thread when available.
-If the user wants to keep the client open, ask how they want the reminder delivered.
+For relative delays in seconds, minutes, hours or days, Wake uses the latest prompt timestamp for this thread when available. The one-minute cancellation window starts when the job is scheduled.
 
 ## Rearm after a reboot
 
@@ -43,33 +49,24 @@ finds nothing, ask the user whether to add this line to their crontab, and add i
 On a no, or when `crontab` fails, tell them to run `~/.config/wake/wake.sh rearm` at boot their own
 way, and do not ask again in this session.
 
-## Resume in Claude Code or OpenCode
+## Claude Code or OpenCode
 
-When the user asks Wake to greet them later, resume this thread with a prompt to give
-the greeting here. Use another delivery channel when the user requests it.
-
-Run from the project root, with double quotes so the id expands now.
-
-| Agent | Job command | Close this session (after setting the job) |
-|---|---|---|
-| Claude Code | `<launch> --resume $CLAUDE_CODE_SESSION_ID '<prompt>'` | `kill -TERM <pid>`, the pid of `$PPID` once `ps -o args= -p $PPID` shows `claude` |
-| opencode | `opencode -s $OPENCODE_SESSION_ID --prompt '<prompt>'` | `hc kill "$HC_TERMINAL_ID"` (set when it runs in an `hc` terminal) |
+Pass the prompt and the command that resumes this session. Shell-quote the session ID and prompt when constructing the command. For OpenCode, use the current session ID.
 
 ```sh
-wake.sh '<when>' "<job command>"
-setsid nohup sh -c 'sleep 45; <close>' >/dev/null 2>&1 </dev/null &
+prompt='Greet the user now.'
+printf -v resume_cmd 'opencode -s %q --prompt %q' "$OPENCODE_SESSION_ID" "$prompt"
+wake.sh resume-agent '+2 minutes' "$prompt" "$resume_cmd"
 ```
 
-- Claude Code's `<launch>` is the line that started this session, minus any resume flag:
-  `ps -o args= -p $(ps -o ppid= -p $PPID)` (e.g. `ach-cli launch claude -- --dangerously-skip-permissions`).
-  Plain `claude` wakes without the user's permission mode or ACH routing and stalls at the first
-  prompt with nobody to answer.
-- Two copies of one session must not run, so close this one once the wake is set, unless the user
-  asks to keep it open: arm the close and send the last reply before it fires,
-  saying it closes and when it comes back. Where it cannot close itself, remind the user to close
-  it before the wake fires.
-- Tell the user the due time with its zone (wake.sh prints it): workspaces run UTC unless `<when>`
-  holds `TZ="Europe/Madrid"`.
-- The prompt sits in single quotes: write it without apostrophes, or as `'\''`. A folder never
-  opened before stops on the trust/MCP dialogs; Codex also stops when its hooks are new or changed.
-- Never a one-shot mode (`claude -p`, `opencode run`, `codex exec`): it answers and exits.
+For Claude Code, use its original launch command and flags followed by `--resume`, the session ID and the prompt. Preserve the launcher's routing and permission mode. This example assumes the session was launched with `claude` alone.
+
+```sh
+prompt='Greet the user now.'
+printf -v resume_cmd 'claude --resume %q %q' "$CLAUDE_CODE_SESSION_ID" "$prompt"
+wake.sh resume-agent '+2 minutes' "$prompt" "$resume_cmd"
+```
+
+Use an interactive resume command. A folder opened for the first time may ask for trust or MCP approval before it accepts the prompt.
+
+Outside `hc`, identify the current client PID from the calling process’s ancestry and verify its name with `ps -o comm= -p "$client_pid"`. Pass that PID as the final argument to `resume-agent`. For a short wake, keep the command running in the foreground. Relay its confirmation as soon as it prints, then act on the prompt when the command returns it. Cancellation ends the wait without a prompt.
