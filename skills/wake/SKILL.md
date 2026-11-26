@@ -29,20 +29,32 @@ way, and do not ask again in this session.
 
 ## Resume this session
 
-Run from the project root, with double quotes so the id expands now. `<launch>` is the line that
-started this session, minus any resume flag: `ps -o args= -p $(ps -o ppid= -p $PPID)` (e.g.
-`ach-cli launch claude -- --dangerously-skip-permissions`). Plain `claude` wakes without the
-user's permission mode or ACH routing and stalls at the first prompt with nobody to answer.
+Run from the project root, with double quotes so the id expands now. `wake.sh` is
+`${CLAUDE_SKILL_DIR}/scripts/wake.sh` in Claude Code and `~/.config/wake/wake.sh` in other agents.
+
+| Agent | Job command | Close this session (after setting the job) |
+|---|---|---|
+| Claude Code | `<launch> --resume $CLAUDE_CODE_SESSION_ID '<prompt>'` | `kill -TERM <pid>`, the pid of `$PPID` once `ps -o args= -p $PPID` shows `claude` |
+| opencode | `opencode -s $OPENCODE_SESSION_ID --prompt '<prompt>'` | `hc kill "$HC_TERMINAL_ID"` (set when it runs in an `hc` terminal) |
+| Codex | `codex resume $CODEX_THREAD_ID '<prompt>'` | none from inside: ask the user to quit it |
 
 ```sh
-"${CLAUDE_SKILL_DIR}/scripts/wake.sh" '<when>' "<launch> --resume $CLAUDE_CODE_SESSION_ID '<prompt>'"
+wake.sh '<when>' "<job command>"
+setsid nohup sh -c 'sleep 45; <close>' >/dev/null 2>&1 </dev/null &
 ```
 
+- Claude Code's `<launch>` is the line that started this session, minus any resume flag:
+  `ps -o args= -p $(ps -o ppid= -p $PPID)` (e.g. `ach-cli launch claude -- --dangerously-skip-permissions`).
+  Plain `claude` wakes without the user's permission mode or ACH routing and stalls at the first
+  prompt with nobody to answer.
+- Codex: its sandbox hides `hc` and makes `~/.config/wake` read-only, so run `wake.sh` outside the
+  sandbox (ask for escalated permissions).
+- Two copies of one session must not run, so close this one once the wake is set, unless the user
+  asks to keep it open: start the close line above and send the last reply inside those 45 s,
+  saying it closes and when it comes back. Where it cannot close itself, remind the user to close
+  it before the wake fires.
 - Tell the user the due time with its zone (wake.sh prints it): workspaces run UTC unless `<when>`
   holds `TZ="Europe/Madrid"`.
-- Two copies of one session must not run. Asked to close it as well: check `ps -o args= -p $PPID`
-  is this `claude`, run `setsid nohup sh -c 'sleep 45; kill -TERM <that pid>' >/dev/null 2>&1 </dev/null &`,
-  and send the last reply inside those 45 s. Otherwise remind the user to close it before the wake fires.
 - The prompt sits in single quotes: write it without apostrophes, or as `'\''`. A folder never
-  opened before stops on the trust/MCP dialogs.
-- Never `claude -p` here: it answers and exits.
+  opened before stops on the trust/MCP dialogs; Codex also stops when its hooks are new or changed.
+- Never a one-shot mode (`claude -p`, `opencode run`, `codex exec`): it answers and exits.
