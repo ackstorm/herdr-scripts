@@ -7,11 +7,12 @@ argument-hint: <when> [prompt]
 # wake
 
 Each job is a file in `~/.config/wake`; at the due time it opens an `hc` terminal in the folder it was set from. A past time is refused.
+`wake.sh` below is `scripts/wake.sh` in this skill's folder (`${CLAUDE_SKILL_DIR}` in Claude Code).
 
 ```sh
-"${CLAUDE_SKILL_DIR}/scripts/wake.sh" '<when>' "<command>"   # anything `date -d` reads: "+2 hours", "tomorrow 08:30"
-"${CLAUDE_SKILL_DIR}/scripts/wake.sh" ls               # jobs, due time, folder, armed or not
-"${CLAUDE_SKILL_DIR}/scripts/wake.sh" rm <name>        # cancel one
+wake.sh '<when>' "<command>"   # anything `date -d` reads: "+2 hours", "tomorrow 08:30"
+wake.sh ls                     # jobs, due time, folder, armed or not
+wake.sh rm <name>              # cancel one
 ```
 
 ## Rearm after a reboot
@@ -29,8 +30,7 @@ way, and do not ask again in this session.
 
 ## Resume this session
 
-Run from the project root, with double quotes so the id expands now. `wake.sh` is
-`${CLAUDE_SKILL_DIR}/scripts/wake.sh` in Claude Code and `~/.config/wake/wake.sh` in other agents.
+Run from the project root, with double quotes so the id expands now.
 
 | Agent | Job command | Close this session (after setting the job) |
 |---|---|---|
