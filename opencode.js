@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const skills = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../skills");
+const skills = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "skills");
 
 // ponytail: `name` and `description` are read as single-line frontmatter values;
 // use a YAML parser if a SKILL.md ever needs more.
