@@ -27,15 +27,15 @@ when() { date -d "@$1" '+%F %T %Z'; }
 # The wait is its own session, so it outlives the shell and terminal that set it.
 # The job file goes only once hc has opened the terminal: a failed run is retried at rearm.
 arm() {
-  local f=$1 name delay
+  local f=$1 name
   name=$(basename "$f")
   armed "$name" && return 0
   read_job "$f"
-  delay=$((due - $(date +%s)))
-  ((delay > 0)) || delay=0
+  # Short sleeps against the clock: sleep alone stops counting while the machine is suspended.
   # shellcheck disable=SC2016 # expanded by the inner sh
-  setsid -f sh -c 'sleep "$1" && hc run --bg --no-parent $6 --name "$2" --cwd "$3" -- zsh -ic "$4" >/dev/null && rm -f "$5"' \
-    "wake-sleep $name" "$delay" "$name" "$cwd" "$cmd" "$f" "$labels" </dev/null >/dev/null 2>&1
+  setsid -f sh -c 'while n=$(date +%s); [ "$n" -lt "$1" ]; do s=$(($1 - n)); sleep $((s < 60 ? s : 60)); done
+    hc run --bg --no-parent $6 --name "$2" --cwd "$3" -- zsh -ic "$4" >/dev/null && rm -f "$5"' \
+    "wake-sleep $name" "$due" "$name" "$cwd" "$cmd" "$f" "$labels" </dev/null >/dev/null 2>&1
 }
 
 add() {
