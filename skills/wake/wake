@@ -2,9 +2,12 @@
 # wake: run a command at a set time in a new hc terminal, in the folder it was set from.
 # Each job is a file in ~/.config/wake (due time, folder, command), so jobs survive a
 # restart: `wake rearm` at boot starts their waits again, and runs overdue ones at once.
+# Boot hooks call the copy in $dir/wake: the plugin folder path changes with each version.
 set -euo pipefail
 PATH=$PATH:$HOME/.local/bin
 dir=${WAKE_DIR:-$HOME/.config/wake}
+mkdir -p "$dir"
+[ "$0" -ef "$dir/wake" ] || cp "$0" "$dir/wake"
 
 usage() {
   cat >&2 <<'EOF'
@@ -41,7 +44,6 @@ add() {
   ((due > $(date +%s))) || { echo "wake: $(when "$due") has passed; try \"tomorrow ...\"" >&2; exit 2; }
   name=wake-$(date -d "@$due" +%m%d-%H%M)
   while [ -e "$dir/$name" ]; do n=$((n + 1)); name=wake-$(date -d "@$due" +%m%d-%H%M)-$n; done
-  mkdir -p "$dir"
   printf '%s\n%s\n%s\n' "$due" "$PWD" "$2" >"$dir/$name"
   arm "$dir/$name"
   echo "$name: $(when "$due"), in $PWD: $2"

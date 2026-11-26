@@ -1,3 +1,4 @@
 mods/*/config.json
 mods/*/jsconfig.json
 mods/*/gpui-kit.d.ts
+.claude/

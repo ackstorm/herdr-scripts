@@ -1,0 +1,8 @@
+{
+  "name": "herdr-scripts",
+  "description": "wake: run a command or resume an agent session at a set time in a new hc terminal.",
+  "author": {
+    "name": "ACKstorm",
+    "url": "https://github.com/ackstorm"
+  }
+}

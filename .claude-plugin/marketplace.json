@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "herdr-scripts",
+  "description": "Small tools around herdr and herdr-core (hc).",
+  "owner": {
+    "name": "ACKstorm",
+    "url": "https://github.com/ackstorm"
+  },
+  "plugins": [
+    {
+      "name": "herdr-scripts",
+      "description": "wake: run a command or resume an agent session at a set time in a new hc terminal.",
+      "source": "./"
+    }
+  ]
+}

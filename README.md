@@ -5,7 +5,8 @@ Small tools around [herdr](https://herdr.dev) and herdr-core (`hc`).
 ## wake
 
 Runs a command at a set time in a new `hc` terminal, in the folder you set it from.
-Jobs are files in `~/.config/wake`, so they survive a restart.
+Jobs are files in `~/.config/wake`, so they survive a restart. It ships as a Claude Code
+plugin whose `wake` skill (`/wake <when> [prompt]`) runs it for you.
 
 ```sh
 wake "+2 hours" "ping -c 3 example.com"
@@ -25,13 +26,19 @@ wake rearm         # start the waits again; overdue jobs run at once
   next `rearm`.
 - **A machine that is off runs nothing.** At the next boot, `rearm` runs what came due.
 
-Install (Linux; needs `hc`, `setsid`, GNU `date`):
+Install (Linux; needs `hc`, `setsid`, GNU `date`), in Claude Code:
 
-```sh
-git clone https://github.com/ackstorm/herdr-scripts ~/Projects/herdr-scripts
-ln -s ~/Projects/herdr-scripts/bin/wake ~/.local/bin/wake
-(crontab -l 2>/dev/null; echo '@reboot sleep 60 && $HOME/.local/bin/wake rearm') | crontab -
 ```
+/plugin marketplace add ackstorm/herdr-scripts
+/plugin install herdr-scripts@herdr-scripts
+```
+
+Every run copies the script to `~/.config/wake/wake`, a path that survives plugin updates: use
+it from a shell (or link it into `~/.local/bin`) and from boot hooks.
+
+**Rearm at boot.** The skill offers to add `@reboot sleep 60 && $HOME/.config/wake/wake rearm`
+to your crontab. Without cron, run `~/.config/wake/wake rearm` at boot your own way (on a Coder
+workspace, in its startup script).
 
 ## mods/remote-sync
 
