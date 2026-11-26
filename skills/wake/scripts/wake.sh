@@ -2,12 +2,12 @@
 # wake: run a command at a set time in a new hc terminal, in the folder it was set from.
 # Each job is a file in ~/.config/wake (due time, folder, command), so jobs survive a
 # restart: `wake rearm` at boot starts their waits again, and runs overdue ones at once.
-# Boot hooks call the copy in $dir/wake: the plugin folder path changes with each version.
+# Boot hooks call the copy in $dir/wake.sh: the plugin folder path changes with each version.
 set -euo pipefail
 PATH=$PATH:$HOME/.local/bin
 dir=${WAKE_DIR:-$HOME/.config/wake}
 mkdir -p "$dir"
-[ "$0" -ef "$dir/wake" ] || cp "$0" "$dir/wake"
+[ "$0" -ef "$dir/wake.sh" ] || cp "$0" "$dir/wake.sh"
 
 usage() {
   cat >&2 <<'EOF'

@@ -6,7 +6,7 @@ argument-hint: <when> [prompt]
 
 # wake
 
-Run `"${CLAUDE_SKILL_DIR}/wake"` (called `wake` below). Each job is a file in `~/.config/wake`; at the
+Run `"${CLAUDE_SKILL_DIR}/scripts/wake.sh"` (called `wake` below). Each job is a file in `~/.config/wake`; at the
 due time it opens an `hc` terminal in the folder it was set from. A past time is refused.
 
 ```sh
@@ -17,15 +17,15 @@ wake rm <name>              # cancel one
 
 ## Rearm after a reboot
 
-A reboot kills the waits; `~/.config/wake/wake rearm` starts them again and runs overdue jobs
-at once. Before the first job, check `crontab -l 2>/dev/null | grep -q 'wake rearm'`. When it
+A reboot kills the waits; `~/.config/wake/wake.sh rearm` starts them again and runs overdue jobs
+at once. Before the first job, check `crontab -l 2>/dev/null | grep -q 'wake.sh rearm'`. When it
 finds nothing, ask the user whether to add this line to their crontab, and add it only on a yes:
 
 ```
-@reboot sleep 60 && $HOME/.config/wake/wake rearm
+@reboot sleep 60 && $HOME/.config/wake/wake.sh rearm
 ```
 
-On a no, or when `crontab` fails, tell them to run `~/.config/wake/wake rearm` at boot their own
+On a no, or when `crontab` fails, tell them to run `~/.config/wake/wake.sh rearm` at boot their own
 way, and do not ask again in this session.
 
 ## Resume this session

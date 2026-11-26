@@ -33,11 +33,11 @@ Install (Linux; needs `hc`, `setsid`, GNU `date`), in Claude Code:
 /plugin install herdr-scripts@herdr-scripts
 ```
 
-Every run copies the script to `~/.config/wake/wake`, a path that survives plugin updates: use
+Every run copies the script to `~/.config/wake/wake.sh`, a path that survives plugin updates: use
 it from a shell (or link it into `~/.local/bin`) and from boot hooks.
 
-**Rearm at boot.** The skill offers to add `@reboot sleep 60 && $HOME/.config/wake/wake rearm`
-to your crontab. Without cron, run `~/.config/wake/wake rearm` at boot your own way (on a Coder
+**Rearm at boot.** The skill offers to add `@reboot sleep 60 && $HOME/.config/wake/wake.sh rearm`
+to your crontab. Without cron, run `~/.config/wake/wake.sh rearm` at boot your own way (on a Coder
 workspace, in its startup script).
 
 ## mods/remote-sync
