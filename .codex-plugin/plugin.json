@@ -1,0 +1,17 @@
+{
+  "name": "herdr-scripts",
+  "description": "wake: run a command or resume an agent session at a set time in a new hc terminal.",
+  "author": {
+    "name": "ACKstorm",
+    "url": "https://github.com/ackstorm"
+  },
+  "homepage": "https://github.com/ackstorm/herdr-scripts",
+  "repository": "https://github.com/ackstorm/herdr-scripts",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "herdr-scripts",
+    "shortDescription": "Run a command or resume a session at a set time.",
+    "developerName": "ACKstorm",
+    "category": "Productivity"
+  }
+}

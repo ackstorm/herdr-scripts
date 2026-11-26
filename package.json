@@ -1,0 +1,15 @@
+{
+  "name": "herdr-scripts",
+  "description": "wake: run a command or resume an agent session at a set time in a new hc terminal.",
+  "type": "module",
+  "repository": "https://github.com/ackstorm/herdr-scripts",
+  "homepage": "https://github.com/ackstorm/herdr-scripts",
+  "main": ".opencode/plugins/herdr-scripts.js",
+  "exports": {
+    ".": "./.opencode/plugins/herdr-scripts.js"
+  },
+  "keywords": ["pi-package", "opencode-plugin", "skills"],
+  "pi": {
+    "skills": ["./skills"]
+  }
+}

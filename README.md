@@ -28,11 +28,23 @@ wake.sh rearm      # start the waits again; overdue jobs run at once
   next `rearm`.
 - **A machine that is off runs nothing.** At the next boot, `rearm` runs what came due.
 
-Install (Linux; needs `hc`, `setsid`, GNU `date`), in Claude Code:
+Install (Linux; needs `hc`, `setsid`, GNU `date`). The repository is the plugin, with a
+manifest per agent at its root:
 
+```sh
+claude   plugin marketplace add ackstorm/herdr-scripts && claude plugin install herdr-scripts@herdr-scripts
+codex    plugin marketplace add ackstorm/herdr-scripts && codex  plugin add     herdr-scripts@herdr-scripts
+opencode plugin add herdr-scripts@git+https://github.com/ackstorm/herdr-scripts.git        # OpenCode 2
+opencode plugin herdr-scripts@git+https://github.com/ackstorm/herdr-scripts.git --global   # OpenCode 1
+pi       install git:github.com/ackstorm/herdr-scripts
+agy      plugin install https://github.com/ackstorm/herdr-scripts                          # Antigravity
 ```
-/plugin marketplace add ackstorm/herdr-scripts
-/plugin install herdr-scripts@herdr-scripts
+
+Re-running the install does not update Claude Code or Codex; refresh the marketplace first:
+
+```sh
+claude plugin marketplace update herdr-scripts  && claude plugin update herdr-scripts@herdr-scripts
+codex  plugin marketplace upgrade herdr-scripts && codex  plugin add    herdr-scripts@herdr-scripts
 ```
 
 Every run copies the script to `~/.config/wake/wake.sh`, a path that survives plugin updates: use
